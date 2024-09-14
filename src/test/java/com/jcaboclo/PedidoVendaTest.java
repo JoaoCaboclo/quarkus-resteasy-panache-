@@ -29,7 +29,7 @@ public class PedidoVendaTest {
         itens.add(item1);
 
         PedidoVenda pedido = new PedidoVenda();
-        pedido.setItens(itens);
+        pedido.setItensPedido(itens);
         pedido.setTotal(item1.getQuantidade() * item1.getPrecoUnitario());
 
         assertEquals(5000.00, pedido.getTotal());

@@ -1,11 +1,11 @@
 package com.jcaboclo.service;
 
-import com.jcaboclo.entity.PedidoVenda;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
+import com.jcaboclo.dto.PedidoVendaDTO;
+import com.jcaboclo.entity.*;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.transaction.Transactional;
 import java.util.List;
 
 @Path("/pedidos")
@@ -13,56 +13,44 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class PedidoVendaResource {
 
-    @Inject
-    CreditCardService creditCardService;
-
-    @Inject
-    CepService cepService;
+    @GET
+    public Response listarPedidos() {
+        return Response.ok(PedidoVenda.<PedidoVenda>listAll().stream()
+                .map(PedidoVendaDTO::fromEntity)
+                .toList()).build();
+    }
 
     @POST
     @Transactional
-    public Response criar(PedidoVenda pedido) {
+    public Response criarPedido(PedidoVendaDTO dto) {
+        // Obtenha o Vendedor e o Cliente
+        Vendedor vendedor = Vendedor.findById(dto.vendedorId());
+        Cliente cliente = Cliente.findById(dto.clienteId());
 
-        // Buscar o CEP do cliente via API externa
-        String cepInfo = cepService.buscarCep(pedido.getCliente().getCep());
-        System.out.println("CEP Info: " + cepInfo);
+        // Crie a instância de PedidoVenda
+        PedidoVenda pedidoVenda = new PedidoVenda();
+        pedidoVenda.setVendedor(vendedor);
+        pedidoVenda.setCliente(cliente);
 
-        // Validar o cartão de crédito
-        boolean cartaoValido = creditCardService.validarCartaoCredito(pedido.getCliente().getCreditCardNumber());
-        if (!cartaoValido) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Cartão de crédito inválido").build();
-        }
+        // Agora converta os itens do pedido, passando PedidoVenda como argumento
+        List<ItemPedido> itensPedido = dto.itensPedido().stream()
+                .map(itemDto -> {
+                    Produto produto = Produto.findById(itemDto.produtoId());
+                    return itemDto.toEntity(produto, pedidoVenda);  // Agora passando produto e pedidoVenda
+                })
+                .toList();
 
-        // Calcular o total do pedido com base nos itens
-        double total = pedido.getItens().stream()
-                .mapToDouble(item -> item.getPrecoUnitario() * item.getQuantidade())
-                .sum();
-        pedido.setTotal(total);
+        // Associe os itens ao pedido
+        pedidoVenda.setItensPedido(itensPedido);
 
-        pedido.persist();
-        return Response.status(Response.Status.CREATED).entity(pedido).build();
+        // Persista o pedido
+        pedidoVenda.persist();
+
+        // Retorne a resposta com o PedidoVendaDTO criado
+        return Response.status(Response.Status.CREATED).entity(PedidoVendaDTO.fromEntity(pedidoVenda)).build();
     }
 
-    @GET
-    public List<PedidoVenda> listar() {
-        return PedidoVenda.listAll();
-    }
 
-    @GET
-    @Path("{id}")
-    public PedidoVenda buscarPorId(@PathParam("id") Long id) {
-        return PedidoVenda.findById(id);
-    }
 
-    @DELETE
-    @Path("{id}")
-    @Transactional
-    public Response deletar(@PathParam("id") Long id) {
-        PedidoVenda pedido = PedidoVenda.findById(id);
-        if (pedido == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        pedido.delete();
-        return Response.noContent().build();
-    }
 }
+

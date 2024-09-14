@@ -1,5 +1,6 @@
 package com.jcaboclo;
 
+import com.jcaboclo.dto.ProdutoDTO;
 import com.jcaboclo.entity.Produto;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -10,12 +11,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ProdutoTest {
 
     @Test
-    public void testProdutoAttributes() {
+    public void testProdutoDtoConversao() {
+        // Entidade Produto fictícia
         Produto produto = new Produto();
-        produto.setNome("Laptop");
-        produto.setPreco(2500.00);
+        produto.id = 1L;
+        produto.setNome("Produto Teste");
+        produto.setPreco(99.99);
 
-        assertEquals("Laptop", produto.getNome());
-        assertEquals(2500.00, produto.getPreco());
+        // Converter para DTO
+        ProdutoDTO dto = ProdutoDTO.fromEntity(produto);
+        assertEquals(produto.id, dto.id());
+        assertEquals(produto.getNome(), dto.nome());
+        assertEquals(produto.getPreco(), dto.preco(), 0.01);
+
+        // Converter de volta para entidade
+        Produto produtoConvertido = dto.toEntity(null);
+        assertEquals(dto.id(), produtoConvertido.id);
+        assertEquals(dto.nome(), produtoConvertido.getNome());
+        assertEquals(dto.preco(), produtoConvertido.getPreco(), 0.01);
     }
 }
