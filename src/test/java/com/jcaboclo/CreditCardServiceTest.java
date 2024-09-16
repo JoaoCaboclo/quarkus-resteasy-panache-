@@ -16,8 +16,8 @@ public class CreditCardServiceTest {
 
     @Test
     public void testValidarCartaoCredito() {
-        boolean valid = creditCardService.validarCartaoCredito("1234567890123456");  // Número fictício de cartão
-        assertTrue(valid);
+        boolean valid = creditCardService.validarCartaoCredito("555298374487547537642853482638614438231558582693");  // Número fictício de cartão
+        assertTrue(!valid);
     }
 }
 

@@ -16,7 +16,7 @@ public class CepServiceTest {
 
     @Test
     public void testBuscarCep() {
-        String cepInfo = cepService.buscarCep("01001000");  // CEP de exemplo
+        String cepInfo = cepService.buscarCep("38425381");  // CEP de exemplo
         assertNotNull(cepInfo);
         System.out.println(cepInfo);
     }

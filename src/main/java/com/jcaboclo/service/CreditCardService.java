@@ -9,7 +9,7 @@ import jakarta.ws.rs.core.Response;
 public class CreditCardService {
 
     public boolean validarCartaoCredito(String creditCardNumber) {
-        String apiUrl = "https://api.ficticia.com/validarCartao/" + creditCardNumber;
+        String apiUrl = "https://www.vccgenerator.org/br/validador-de-cartao-de-credito/" + creditCardNumber;
 
         Response response = ClientBuilder.newClient()
                 .target(apiUrl)
