@@ -1,5 +1,8 @@
 package com.jcaboclo.service;
 
+import com.jcaboclo.dto.CategoriaProdutoDTO;
+import com.jcaboclo.dto.ProdutoDTO;
+import com.jcaboclo.entity.CategoriaProduto;
 import com.jcaboclo.entity.Produto;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -25,9 +28,11 @@ public class ProdutoResource {
 
     @POST
     @Transactional
-    public Response criar(Produto produto) {
-        produto.persist();
-        return Response.status(Response.Status.CREATED).entity(produto).build();
+    public Response criar(ProdutoDTO produtoDTO) {
+        CategoriaProduto categoriaProduto = new CategoriaProduto();
+        Produto produto = produtoDTO.toEntity(categoriaProduto);
+        Produto.persist(produto);
+        return Response.status(Response.Status.CREATED).entity(produtoDTO).build();
     }
 
     @PUT

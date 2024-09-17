@@ -15,8 +15,8 @@ public class CategoriaProduto extends PanacheEntity {
     @Column(nullable = false)
     public String nome;
 
-    @OneToMany(mappedBy = "categoriaProduto", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Produto> produtos;
+   // @OneToMany(mappedBy = "categoriaProduto", cascade = CascadeType.ALL, orphanRemoval = true)
+  //  private List<Produto> produtos;
 
  }
 
