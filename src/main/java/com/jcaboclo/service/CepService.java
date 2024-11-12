@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 public class CepService {
 
     public String buscarCep(String cep) {
+
         String apiUrl = "https://viacep.com.br/ws/" + cep + "/json/";
 
         Response response = ClientBuilder.newClient()
