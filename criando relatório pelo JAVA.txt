@@ -1,0 +1,666 @@
+
+
+// Dentro do serviço Spring Boot
+
+
+Para implementar essa funcionalidade em Java 17 com JasperReports, você pode seguir os seguintes passos:
+
+✅ Objetivo
+Criar um serviço que:
+
+Recebe parâmetros por URL.
+
+Consulta pedidos e itens.
+
+Preenche um relatório Jasper com essas informações.
+
+Gera um arquivo PDF.
+
+Disponibiliza o link para consulta/baixa.
+
+🧰 Tecnologias Envolvidas
+Java 17
+
+Spring Boot (opcional, mas facilita muito)
+
+JasperReports
+
+JasperReports Library (JRXML/JASPER)
+
+JasperReport Builder ou iReport Designer (ou Jaspersoft Studio)
+
+Apache Commons IO (para salvar arquivos)
+
+Serviço REST (Spring MVC ou JAX-RS)
+
+📦 Dependências Maven
+xml
+Copiar
+Editar
+<dependencies>
+    <dependency>
+        <groupId>net.sf.jasperreports</groupId>
+        <artifactId>jasperreports</artifactId>
+        <version>6.20.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.11.0</version>
+    </dependency>
+</dependencies>
+📄 Estrutura dos Dados
+java
+Copiar
+Editar
+public class Pedido {
+    private Long id;
+    private String cliente;
+    private LocalDate data;
+    private List<ItemPedido> itens;
+    // getters e setters
+}
+
+public class ItemPedido {
+    private String produto;
+    private Integer quantidade;
+    private BigDecimal precoUnitario;
+    // getters e setters
+}
+🧠 1. Criar o Relatório .jrxml
+Com o JasperReport Designer (Jaspersoft Studio), você deve:
+
+Criar um relatório mestre (pedido.jasper) com SUBREPORT para os itens.
+
+Definir os parâmetros (como clienteId, dataInicio, etc.)
+
+Definir os campos ($F{cliente}, $F{data}, etc.)
+
+O subrelatório (itemPedido.jasper) deve estar no mesmo diretório ou acessível via parâmetro.
+
+🔨 2. Preencher e Gerar o PDF
+java
+Copiar
+Editar
+@GetMapping("/relatorio/pedidos")
+public ResponseEntity<String> gerarRelatorio(
+        @RequestParam String clienteId,
+        @RequestParam(required = false) String dataInicio,
+        @RequestParam(required = false) String dataFim) {
+
+    try {
+        // 1. Buscar dados
+        List<Pedido> pedidos = pedidoService.buscarPedidos(clienteId, dataInicio, dataFim);
+
+        // 2. Caminhos do relatório
+        String caminhoRelatorio = "relatorios/pedido.jasper";
+        String caminhoSubRelatorio = "relatorios/itemPedido.jasper";
+
+        // 3. Parametros para o Jasper
+        Map<String, Object> parametros = new HashMap<>();
+        parametros.put("CLIENTE_ID", clienteId);
+        parametros.put("SUBREPORT_DIR", new File("relatorios/").getAbsolutePath() + File.separator);
+
+        // 4. Fonte de dados do Jasper
+        JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(pedidos);
+
+        // 5. Preencher relatório
+        JasperPrint jasperPrint = JasperFillManager.fillReport(
+            new FileInputStream(caminhoRelatorio), parametros, dataSource);
+
+        // 6. Gerar PDF
+        String nomeArquivo = "relatorio_pedidos_" + UUID.randomUUID() + ".pdf";
+        String caminhoPDF = "/caminho/onde/salvar/" + nomeArquivo;
+        JasperExportManager.exportReportToPdfFile(jasperPrint, caminhoPDF);
+
+        // 7. Retornar link (suponha que o serviço sirva arquivos de uma pasta)
+        String urlArquivo = "http://seuservidor.com/arquivos/" + nomeArquivo;
+        return ResponseEntity.ok(urlArquivo);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Erro ao gerar relatório: " + e.getMessage());
+    }
+}
+🧪 3. Servir os Arquivos PDF
+Você pode usar um @RestController para baixar arquivos:
+
+java
+Copiar
+Editar
+@GetMapping("/arquivos/{nomeArquivo}")
+public ResponseEntity<Resource> baixarArquivo(@PathVariable String nomeArquivo) throws IOException {
+    File arquivo = new File("/caminho/onde/salvar/" + nomeArquivo);
+    Resource resource = new FileSystemResource(arquivo);
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nomeArquivo + "\"")
+        .body(resource);
+}
+🧠 Importante
+JasperReports exige que os relatórios estejam compilados (.jasper) ou compile via JasperCompileManager.
+
+Para subrelatórios, passe o caminho via SUBREPORT_DIR.
+
+Use JRBeanCollectionDataSource para listas de objetos.
+
+Se quiser, posso te ajudar a:
+
+Gerar um modelo .jrxml para seus pedidos/itens.
+
+Criar um serviço Spring Boot completo.
+
+Explicar como montar relatórios com subrelatórios.
+
+Quer que eu gere um exemplo funcional completo?
+
+
+
+
+
+
+
+Você disse:
+quero sim
+O ChatGPT disse:
+Ótimo! Vamos montar um exemplo funcional completo com:
+
+✅ Estrutura de classes (Pedido, ItemPedido)
+
+✅ Serviço REST que recebe parâmetros e gera o relatório
+
+✅ Templates .jrxml com subrelatório
+
+✅ Geração e disponibilização do PDF
+
+🔧 1. Estrutura do Projeto (Spring Boot)
+
+src
+└── main
+    ├── java
+    │   └── com.exemplo.relatorios
+    │       ├── controller
+    │       │   └── RelatorioController.java
+    │       ├── model
+    │       │   ├── Pedido.java
+    │       │   └── ItemPedido.java
+    │       ├── service
+    │       │   └── PedidoService.java
+    │       └── RelatoriosApplication.java
+    └── resources
+        ├── relatorios
+        │   ├── pedido.jrxml
+        │   └── itemPedido.jrxml
+        └── application.properties
+
+2. Models
+=========
+Pedido.java
+
+public class Pedido {
+    private Long id;
+    private String cliente;
+    private LocalDate data;
+    private List<ItemPedido> itens;
+
+    // Getters e Setters
+}
+
+ItemPedido.java
+
+public class ItemPedido {
+    private String produto;
+    private Integer quantidade;
+    private BigDecimal precoUnitario;
+
+    // Getters e Setters
+}
+
+3. Mock de Serviço
+==================
+PedidoService.java
+
+@Service
+public class PedidoService {
+
+    public List<Pedido> buscarPedidos(String clienteId, String dataInicio, String dataFim) {
+        List<Pedido> lista = new ArrayList<>();
+
+        Pedido pedido = new Pedido();
+        pedido.setId(1L);
+        pedido.setCliente("Cliente " + clienteId);
+        pedido.setData(LocalDate.now());
+
+        List<ItemPedido> itens = List.of(
+            new ItemPedido("Produto A", 2, new BigDecimal("10.00")),
+            new ItemPedido("Produto B", 1, new BigDecimal("20.00"))
+        );
+        pedido.setItens(itens);
+
+        lista.add(pedido);
+        return lista;
+    }
+}
+
+4. Relatório Controller
+=======================
+
+RelatorioController.java
+
+@RestController
+@RequestMapping("/relatorio")
+public class RelatorioController {
+
+    @Autowired
+    private PedidoService pedidoService;
+
+    @GetMapping("/pedidos")
+    public ResponseEntity<String> gerarRelatorio(
+        @RequestParam String clienteId,
+        @RequestParam(required = false) String dataInicio,
+        @RequestParam(required = false) String dataFim) {
+
+        try {
+            List<Pedido> pedidos = pedidoService.buscarPedidos(clienteId, dataInicio, dataFim);
+            InputStream jasper = getClass().getResourceAsStream("/relatorios/pedido.jasper");
+
+            Map<String, Object> parametros = new HashMap<>();
+            parametros.put("SUBREPORT_DIR", new File("src/main/resources/relatorios/").getAbsolutePath() + File.separator);
+
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(pedidos);
+
+            JasperPrint print = JasperFillManager.fillReport(jasper, parametros, dataSource);
+
+            String nomeArquivo = "pedido_" + UUID.randomUUID() + ".pdf";
+            String caminho = "arquivos/" + nomeArquivo;
+
+            File out = new File(caminho);
+            out.getParentFile().mkdirs();
+            JasperExportManager.exportReportToPdfStream(print, new FileOutputStream(out));
+
+            String url = "http://localhost:8080/arquivos/" + nomeArquivo;
+            return ResponseEntity.ok(url);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Erro: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/arquivos/{arquivo}")
+    public ResponseEntity<Resource> download(@PathVariable String arquivo) throws IOException {
+        File file = new File("arquivos/" + arquivo);
+        if (!file.exists()) return ResponseEntity.notFound().build();
+
+        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(resource);
+    }
+}
+
+5. Templates JRXML
+==================
+
+pedido.jrxml
+Crie um relatório com os campos:
+
+cliente
+
+data
+
+Crie um subrelatório embutido com parâmetro itens e o campo itens vinculado via JRBeanCollectionDataSource.
+
+itemPedido.jrxml
+Crie um subrelatório com os campos:
+
+produto
+
+quantidade
+
+precoUnitario
+
+6. application.properties
+=========================
+spring.main.allow-bean-definition-overriding=true
+server.port=8080
+
+7. Compilar o .jrxml
+====================
+Compile os arquivos .jrxml para .jasper via código ou manualmente usando o Jaspersoft Studio.
+
+Se quiser compilar via código:
+
+JasperReport report = JasperCompileManager.compileReport("src/main/resources/relatorios/pedido.jrxml");
+JasperExportManager.exportReportToPdfFile(report, "saida.pdf");
+
+Exemplo de URL
+==============
+
+http://localhost:8080/relatorio/pedidos?clienteId=123
+
+
+Vamos fazer tudo passo a passo. Aqui está o que farei para você:
+================================================================
+📋 Plano de Ação
+✅ Gerar os arquivos .jrxml de exemplo:
+
+pedido.jrxml (relatório principal com subrelatório)
+
+itemPedido.jrxml (subrelatório para itens de pedido)
+
+✅ Gerar um projeto Spring Boot estruturado:
+
+Com controller, serviço, modelos
+
+Endpoint funcional para gerar o relatório
+
+Código para compilar .jrxml, gerar PDF e servir via link
+
+✅ Entregar em um .zip com tudo pronto para rodar localmente.
+
+🎯 O que você precisa fazer agora
+Antes de eu gerar e te enviar os arquivos:
+
+🔧 Me responda essas 3 perguntas rápidas:
+Você está usando Maven ou Gradle?
+(ex: Maven)
+
+Quer o PDF armazenado no sistema de arquivos local (temporário) ou no banco/base64)?
+(ex: Local, temporário)
+
+Quer o nome dos campos no relatório em português ou inglês?
+(ex: Português)
+
+Assim que você responder, eu:
+
+✅ Gerarei os arquivos .jrxml com base no layout real.
+✅ Montarei o projeto .zip pronto para rodar.
+✅ Enviarei aqui mesmo o link para baixar.
+
+=====================================
+
+relatorios-demo/
+├── pom.xml
+├── src/
+│   ├── main/java/com/exemplo/relatorios/
+│   │   ├── model/           (Pedido, ItemPedido)
+│   │   ├── service/         (PedidoService)
+│   │   ├── controller/      (RelatorioController)
+│   └── main/resources/
+│       ├── relatorios/      (pedido.jrxml, itemPedido.jrxml)
+│       └── application.properties
+⏳ Status
+
+📁 Estrutura do Projeto
+
+relatorios-demo/
+├── pom.xml
+├── src/
+│   ├── main/
+│   │   ├── java/com/exemplo/relatorios/
+│   │   │   ├── RelatoriosApplication.java
+│   │   │   ├── model/
+│   │   │   │   ├── Pedido.java
+│   │   │   │   └── ItemPedido.java
+│   │   │   ├── service/
+│   │   │   │   └── PedidoService.java
+│   │   │   └── controller/
+│   │   │       └── RelatorioController.java
+│   │   └── resources/
+│   │       ├── relatorios/
+│   │       │   ├── pedido.jrxml
+│   │       │   └── itemPedido.jrxml
+│   │       └── application.properties
+
+[1] pom.xml
+===========
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" ...>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.exemplo</groupId>
+  <artifactId>relatorios</artifactId>
+  <version>1.0.0</version>
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.jasperreports</groupId>
+      <artifactId>jasperreports</artifactId>
+      <version>6.20.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
+[2] Modelos Java
+=================
+Pedido.java
+
+package com.exemplo.relatorios.model;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public class Pedido {
+    private Long id;
+    private String cliente;
+    private LocalDate data;
+    private List<ItemPedido> itens;
+
+    // Getters e Setters
+}
+
+ItemPedido.java
+===============
+
+package com.exemplo.relatorios.model;
+
+import java.math.BigDecimal;
+
+public class ItemPedido {
+    private String produto;
+    private Integer quantidade;
+    private BigDecimal precoUnitario;
+
+    // Construtor, Getters e Setters
+}
+
+[3] Serviço de Mock
+===================
+
+PedidoService.java
+java
+Copiar
+Editar
+package com.exemplo.relatorios.service;
+
+import com.exemplo.relatorios.model.*;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+public class PedidoService {
+    public List<Pedido> buscarPedidos(String clienteId) {
+        Pedido pedido = new Pedido();
+        pedido.setId(1L);
+        pedido.setCliente("Cliente " + clienteId);
+        pedido.setData(LocalDate.now());
+
+        pedido.setItens(List.of(
+            new ItemPedido("Produto A", 2, new BigDecimal("15.50")),
+            new ItemPedido("Produto B", 1, new BigDecimal("22.00"))
+        ));
+
+        return List.of(pedido);
+    }
+}
+
+[4] Controller com duas abordagens
+==================================
+
+RelatorioController.java
+========================
+
+package com.exemplo.relatorios.controller;
+
+import com.exemplo.relatorios.model.Pedido;
+import com.exemplo.relatorios.service.PedidoService;
+import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.*;
+import java.util.*;
+
+@RestController
+@RequestMapping("/relatorio")
+public class RelatorioController {
+
+    @Autowired
+    private PedidoService pedidoService;
+
+    @GetMapping("/pdf-local")
+    public ResponseEntity<String> gerarPdfLocal(@RequestParam String clienteId) {
+        try {
+            List<Pedido> pedidos = pedidoService.buscarPedidos(clienteId);
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(pedidos);
+
+            JasperReport report = JasperCompileManager.compileReport(
+                getClass().getResourceAsStream("/relatorios/pedido.jrxml")
+            );
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("SUBREPORT_DIR", getClass().getResource("/relatorios/").getPath());
+
+            JasperPrint print = JasperFillManager.fillReport(report, params, dataSource);
+
+            String nome = "pedido_" + UUID.randomUUID() + ".pdf";
+            File pdf = new File("arquivos/" + nome);
+            pdf.getParentFile().mkdirs();
+
+            JasperExportManager.exportReportToPdfStream(print, new FileOutputStream(pdf));
+
+            return ResponseEntity.ok("http://localhost:8080/arquivos/" + nome);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/pdf-base64")
+    public ResponseEntity<String> gerarPdfBase64(@RequestParam String clienteId) {
+        try {
+            List<Pedido> pedidos = pedidoService.buscarPedidos(clienteId);
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(pedidos);
+
+            JasperReport report = JasperCompileManager.compileReport(
+                getClass().getResourceAsStream("/relatorios/pedido.jrxml")
+            );
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("SUBREPORT_DIR", getClass().getResource("/relatorios/").getPath());
+
+            JasperPrint print = JasperFillManager.fillReport(report, params, dataSource);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            JasperExportManager.exportReportToPdfStream(print, baos);
+
+            String base64 = Base64.getEncoder().encodeToString(baos.toByteArray());
+            return ResponseEntity.ok(base64);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro: " + e.getMessage());
+        }
+    }
+}
+📄 [5] application.properties
+properties
+Copiar
+Editar
+server.port=8080
+spring.main.allow-bean-definition-overriding=true
+
+
+
+============================================
+https://github.com/jamilxt/java_spring-boot_japser-report
+
+* PDF: [http://localhost:8080/reports/transactions/download?exportType=PDF](http://localhost:8080/reports/transactions/download?exportType=PDF) <br><br>
+![image](https://user-images.githubusercontent.com/18072164/106577485-9bcf7280-6568-11eb-925e-938f188ca2b1.png) <br><br>
+* EXCEL: [http://localhost:8080/reports/transactions/download?exportType=EXCEL](http://localhost:8080/reports/transactions/download?exportType=EXCEL) <br><br>
+![image](https://user-images.githubusercontent.com/18072164/106577645-d0432e80-6568-11eb-9063-5fd02df2bc0c.png) <br><br>
+* CSV: [http://localhost:8080/reports/transactions/download?exportType=CSV](http://localhost:8080/reports/transactions/download?exportType=CSV) <br><br>
+![image](https://user-images.githubusercontent.com/18072164/106577739-ee109380-6568-11eb-87ef-8ae5d7f7d50e.png) <br><br>
+* DOCX: [http://localhost:8080/reports/transactions/download?exportType=DOCX](http://localhost:8080/reports/transactions/download?exportType=DOCX) <br><br>
+![image](https://user-images.githubusercontent.com/18072164/106577866-14ceca00-6569-11eb-85d8-08bd5d80a115.png) <br><br>
+
+
+
+@Service
+public class RelatorioService {
+
+    private final DataSource dataSource;
+
+    public RelatorioService(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public byte[] gerarRelatorio(String templatePath, Map<String, Object> parametros) {
+        try {
+            // Carrega o template
+            InputStream inputStream = new ClassPathResource(templatePath).getInputStream();
+            JasperReport jasperReport = JasperCompileManager.compileReport(inputStream);
+
+            // Prepara a fonte de dados
+            Connection connection = dataSource.getConnection();
+
+            // Prepara os parâmetros
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(parametros.get("listaDados"));
+
+            // Gera o relatório
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parametros, connection);
+
+            // Exporta para PDF
+            byte[] pdfBytes = JasperExportManager.exportReportToPdf(jasperPrint);
+
+            return pdfBytes;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+}
+
+
