@@ -1,5 +1,178 @@
 
 
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+              http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="relatorioMandatos" pageWidth="595" pageHeight="842" columnWidth="555"
+              leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
+              uuid="relatorio-mandatos-uuid">
+
+  <!-- CAMPOS ESPERADOS NO OBJETO -->
+  <field name="NO_REDUZIDO_EMPRESA" class="java.lang.String"/>
+  <field name="NO_COLEGIADO" class="java.lang.String"/>
+  <field name="DT_INICIO_POSSE_MEMBRO" class="java.util.Date"/>
+  <field name="DT_FIM_POSSE_MEMBRO" class="java.util.Date"/>
+
+  <!-- PARÂMETROS -->
+  <parameter name="DATA_RELATORIO" class="java.util.Date"/>
+
+  <!-- TÍTULO COM NOME E DATA -->
+  <title>
+    <band height="50">
+      <staticText>
+        <reportElement x="0" y="0" width="400" height="20"/>
+        <textElement textAlignment="Left">
+          <font size="16" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Mandatos dos Membros]]></text>
+      </staticText>
+      <textField pattern="dd/MM/yyyy">
+        <reportElement x="420" y="0" width="135" height="20"/>
+        <textElement textAlignment="Right">
+          <font size="10" isBold="false"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$P{DATA_RELATORIO}]]></textFieldExpression>
+      </textField>
+    </band>
+  </title>
+
+  <!-- COLUNAS DO CABEÇALHO -->
+  <columnHeader>
+    <band height="20">
+      <staticText>
+        <reportElement x="0" y="0" width="150" height="20"/>
+        <text><![CDATA[Empresa]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="150" y="0" width="150" height="20"/>
+        <text><![CDATA[Colegiado]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="300" y="0" width="125" height="20"/>
+        <text><![CDATA[Início do Mandato]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="425" y="0" width="125" height="20"/>
+        <text><![CDATA[Fim do Mandato]]></text>
+      </staticText>
+    </band>
+  </columnHeader>
+
+  <!-- DETALHE DE CADA LINHA -->
+  <detail>
+    <band height="20">
+      <textField>
+        <reportElement x="0" y="0" width="150" height="20"/>
+        <textFieldExpression><![CDATA[$F{NO_REDUZIDO_EMPRESA}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="150" y="0" width="150" height="20"/>
+        <textFieldExpression><![CDATA[$F{NO_COLEGIADO}]]></textFieldExpression>
+      </textField>
+      <textField pattern="dd/MM/yyyy">
+        <reportElement x="300" y="0" width="125" height="20"/>
+        <textFieldExpression><![CDATA[$F{DT_INICIO_POSSE_MEMBRO}]]></textFieldExpression>
+      </textField>
+      <textField pattern="dd/MM/yyyy">
+        <reportElement x="425" y="0" width="125" height="20"/>
+        <textFieldExpression><![CDATA[$F{DT_FIM_POSSE_MEMBRO}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <!-- RODAPÉ COM FRASE E NÚMERO DE PÁGINA -->
+  <pageFooter>
+    <band height="20">
+      <staticText>
+        <reportElement x="0" y="0" width="300" height="20"/>
+        <text><![CDATA[Relatório gerado automaticamente.]]></text>
+      </staticText>
+      <textField pattern="Página {0}">
+        <reportElement x="420" y="0" width="135" height="20"/>
+        <textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER}]]></textFieldExpression>
+      </textField>
+    </band>
+  </pageFooter>
+
+</jasperReport>
+
+  ENVIANDO
+
+Map<String, Object> params = new HashMap<>();
+params.put("DATA_RELATORIO", new Date());
+
+JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(listaMandatos);
+
+JasperReport report = JasperCompileManager.compileReport(...);
+JasperPrint print = JasperFillManager.fillReport(report, params, ds);
+
+
+==============================================================
+
+preciso transformar em template para usar no java?
+
+
+O ChatGPT disse:
+Excelente pergunta! Vamos direto ao ponto:
+
+✅ Você precisa compilar o .jrxml para .jasper antes de usar no Java
+O .jrxml é apenas o template XML "em texto". Ele não pode ser usado diretamente para preencher e gerar relatórios.
+
+O Java (JasperReports) usa o arquivo compilado .jasper, que é gerado a partir do .jrxml.
+
+🛠️ Como compilar .jrxml em .jasper no Java
+Você pode compilar diretamente no seu código Java:
+
+java
+Copiar
+Editar
+JasperReport report = JasperCompileManager.compileReport("caminho/relatorioMandatos.jrxml");
+Ou então usar a ferramenta no Maven ou um utilitário para pré-compilar (e evitar recompilar em tempo de execução).
+
+💡 Alternativa: Pré-compilar com Maven (ideal para produção)
+Adicione esse plugin no seu pom.xml:
+
+xml
+Copiar
+Editar
+<plugin>
+  <groupId>net.sf.jasperreports</groupId>
+  <artifactId>jasperreports-maven-plugin</artifactId>
+  <version>1.0</version>
+  <executions>
+    <execution>
+      <id>compile-jrxml</id>
+      <phase>generate-resources</phase>
+      <goals>
+        <goal>compile</goal>
+      </goals>
+      <configuration>
+        <sourceDirectory>${project.basedir}/src/main/resources/relatorios</sourceDirectory>
+        <outputDirectory>${project.build.outputDirectory}/relatorios</outputDirectory>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+Esse plugin compila automaticamente todos os .jrxml para .jasper durante o mvn clean install.
+
+🧩 E no seu código, você usaria:
+java
+Copiar
+Editar
+InputStream jasperStream = getClass().getResourceAsStream("/relatorios/relatorioMandatos.jasper");
+
+JasperPrint print = JasperFillManager.fillReport(jasperStream, params, new JRBeanCollectionDataSource(lista));
+✅ Resumo Rápido
+O que	Extensão	Uso
+Template editável	.jrxml	Você cria ou edita
+Compilado	.jasper	O Java realmente usa
+
+
+==============================================================
+
+
 // Dentro do serviço Spring Boot
 
 
